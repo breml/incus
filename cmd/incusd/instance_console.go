@@ -546,6 +546,12 @@ func instanceConsolePost(d *Daemon, r *http.Request) response.Response {
 //	    description: Project name
 //	    type: string
 //	    example: default
+//	  - in: query
+//	    name: type
+//	    description: Console type
+//	    type: string
+//	    enum: [log, vga]
+//	    example: vga
 //	responses:
 //	  "200":
 //	     description: Raw console log
@@ -554,6 +560,10 @@ func instanceConsolePost(d *Daemon, r *http.Request) response.Response {
 //	         schema:
 //	           type: string
 //	           example: some-text
+//	       image/png:
+//	         schema:
+//	           type: string
+//	           format: binary
 //	  "400":
 //	    $ref: "#/responses/BadRequest"
 //	  "403":
@@ -574,6 +584,11 @@ func instanceConsoleLogGet(d *Daemon, r *http.Request) response.Response {
 	name, err := url.PathUnescape(mux.Vars(r)["name"])
 	if err != nil {
 		return response.SmartError(err)
+	}
+
+	consoleLogType := request.QueryParam(r, "type")
+	if consoleLogType != "" && consoleLogType != "log" && consoleLogType != "vga" {
+		return response.SmartError(fmt.Errorf("Invalid value for type parameter: %s", consoleLogType))
 	}
 
 	if internalInstance.IsSnapshot(name) {
@@ -649,14 +664,25 @@ func instanceConsoleLogGet(d *Daemon, r *http.Request) response.Response {
 			return response.SmartError(fmt.Errorf("Failed to cast inst to VM"))
 		}
 
-		logContents, err := v.ConsoleLog()
-		if err != nil {
-			return response.SmartError(err)
+		if consoleLogType == "vga" {
+			screenshot, err := v.ConsoleScreenshot()
+			if err != nil {
+				return response.SmartError(err)
+			}
+
+			ent.File = bytes.NewReader(screenshot)
+			ent.FileSize = int64(len(screenshot))
+		} else {
+			logContents, err := v.ConsoleLog()
+			if err != nil {
+				return response.SmartError(err)
+			}
+
+			ent.File = bytes.NewReader([]byte(logContents))
+			ent.FileSize = int64(len(logContents))
 		}
 
-		ent.File = bytes.NewReader([]byte(logContents))
 		ent.FileModified = time.Now()
-		ent.FileSize = int64(len(logContents))
 
 		return response.FileResponse(r, []response.FileResponseEntry{ent}, nil)
 	}

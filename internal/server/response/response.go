@@ -452,7 +452,11 @@ func (r *fileResponse) Render(w http.ResponseWriter) error {
 			rs = f
 		}
 
-		w.Header().Set("Content-Type", "application/octet-stream")
+		// Only set Content-Type header if not yet set.
+		if w.Header().Get("Content-Type") == "" {
+			w.Header().Set("Content-Type", "application/octet-stream")
+		}
+
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", sz))
 		w.Header().Set("Content-Disposition", fmt.Sprintf("inline;filename=%s", r.files[0].Filename))
 

@@ -9371,7 +9371,7 @@ func (d *qemu) ConsoleLog() (string, error) {
 
 	// If we got data back, append it to the log file for this instance.
 	if logString != "" {
-		logFile, err := os.OpenFile(d.common.ConsoleBufferLogPath(), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		logFile, err := os.OpenFile(d.common.ConsoleBufferLogPath(), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 		if err != nil {
 			return "", err
 		}
@@ -9444,4 +9444,44 @@ func (d *qemu) consoleSwapSocketWithRB() error {
 	}()
 
 	return monitor.ChardevChange("console", qmp.ChardevChangeInfo{Type: "ringbuf"})
+}
+
+// ConsoleScreenshot returns a screenshot of the current VGA console in PNG format.
+func (d *qemu) ConsoleScreenshot() ([]byte, error) {
+	if !d.IsRunning() {
+		return nil, fmt.Errorf("Instance is not running")
+	}
+
+	// Check if the agent is running.
+	monitor, err := qmp.Connect(d.monitorPath(), qemuSerialChardevName, d.getMonitorEventHandler(), d.QMPLogFilePath())
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a target screenshot file.
+	screenshotPath := filepath.Join(d.Path(), "screenshot.png")
+	f, err := os.Create(screenshotPath)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't create screenshot path")
+	}
+
+	defer f.Close()
+
+	err = f.Chown(int(d.state.OS.UnprivUID), -1)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to chown screenshot path: %w", err)
+	}
+
+	// Take the screenshot.
+	err = monitor.Screendump(filepath.Join(d.Path(), "screenshot.png"))
+	if err != nil {
+		return nil, fmt.Errorf("Failed taking screenshot: %w", err)
+	}
+
+	screenshot, err := os.ReadFile(filepath.Join(d.Path(), "screenshot.png"))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read screenshot: %w", err)
+	}
+
+	return screenshot, nil
 }

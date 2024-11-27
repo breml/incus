@@ -1274,3 +1274,26 @@ func (m *Monitor) ChardevChange(device string, info ChardevChangeInfo) error {
 
 	return fmt.Errorf("Unsupported chardev type %q", info.Type)
 }
+
+// Screendump takes a screenshot of the current VGA console.
+// The screendump is stored to the filename provided as argument.
+//
+// In order to have access to the screendump from the outside of the VM
+// one needs to first send a file and then pass /proc/self/fd/NUMBER
+// as the filename to this function.
+func (m *Monitor) Screendump(filename string) error {
+	var args struct {
+		Filename string `json:"filename"`
+		Device   string `json:"device,omitempty"`
+		Head     int    `json:"head,omitempty"`
+		Format   string `json:"format,omitempty"`
+	}
+	args.Filename = filename
+	args.Format = "png"
+
+	var queryResp struct {
+		Return struct{} `json:"return"`
+	}
+
+	return m.Run("screendump", args, &queryResp)
+}
