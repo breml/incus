@@ -527,7 +527,7 @@ func (m *Method) getOne(buf *file.Buffer) error {
 
 	buf.L("switch len(objects) {")
 	buf.L("case 0:")
-	buf.L(`        return nil, api.StatusErrorf(http.StatusNotFound, "%s not found")`, lex.Camel(m.entity))
+	buf.L(`        return nil, mapErr(errTypeNotFound, nil, %q)`, lex.Camel(m.entity))
 	buf.L("case 1:")
 	buf.L("        return &objects[0], nil")
 	buf.L("default:")
@@ -573,7 +573,7 @@ func (m *Method) id(buf *file.Buffer) error {
 	buf.L("var id int64")
 	buf.L("err = row.Scan(&id)")
 	buf.L("if errors.Is(err, sql.ErrNoRows) {")
-	buf.L(`return -1, api.StatusErrorf(http.StatusNotFound, "%s not found")`, lex.Camel(m.entity))
+	buf.L(`return -1, mapErr(errTypeNotFound, err, %q)`, lex.Camel(m.entity))
 	buf.L("}")
 	buf.N()
 	m.ifErrNotNil(buf, true, "-1", fmt.Sprintf(`fmt.Errorf("Failed to get \"%s\" ID: %%w", err)`, entityTable(m.entity, m.config["table"])))
@@ -603,15 +603,26 @@ func (m *Method) exists(buf *file.Buffer) error {
 
 	defer m.end(buf)
 
-	buf.L("_, err := Get%sID(ctx, tx, %s)", lex.Camel(m.entity), mapping.FieldParams(nk))
-	buf.L("if err != nil {")
-	buf.L("        if api.StatusErrorCheck(err, http.StatusNotFound) {")
-	buf.L("                return false, nil")
-	buf.L("        }")
-	buf.N()
-	buf.L("        return false, err")
+	buf.L("stmt, err := Stmt(tx, %s)", stmtCodeVar(m.entity, "ID"))
+
+	m.ifErrNotNil(buf, true, "false", fmt.Sprintf(`fmt.Errorf("Failed to get \"%s\" prepared statement: %%w", err)`, stmtCodeVar(m.entity, "ID")))
+
+	for _, field := range nk {
+		if util.IsTrue(field.Config.Get("marshal")) {
+			buf.L("marshaled%s, err := query.Marshal(%s)", field.Name, lex.Minuscule(field.Name))
+			m.ifErrNotNil(buf, true, "false", "err")
+		}
+	}
+
+	buf.L("row := stmt.QueryRowContext(ctx, %s)", mapping.FieldParamsMarshal(nk))
+	buf.L("var id int64")
+	buf.L("err = row.Scan(&id)")
+	buf.L("if errors.Is(err, sql.ErrNoRows) {")
+	buf.L(`        return false, nil`)
 	buf.L("}")
 	buf.N()
+	m.ifErrNotNil(buf, true, "false", fmt.Sprintf(`fmt.Errorf("Failed to get \"%s\" ID: %%w", err)`, entityTable(m.entity, m.config["table"])))
+
 	buf.L("return true, nil")
 
 	return nil
@@ -699,7 +710,7 @@ func (m *Method) create(buf *file.Buffer, replace bool) error {
 				buf.L("exists, err := %sExists(ctx, tx, %s)", lex.Camel(m.entity), strings.Join(nkParams, ", "))
 				m.ifErrNotNil(buf, true, "-1", "fmt.Errorf(\"Failed to check for duplicates: %w\", err)")
 				buf.L("if exists {")
-				buf.L(`        return -1, api.StatusErrorf(http.StatusConflict, "This \"%s\" entry already exists")`, entityTable(m.entity, m.config["table"]))
+				buf.L(`        return -1, mapErr(errTypeConflict, err, %q)`, entityTable(m.entity, m.config["table"]))
 				buf.L("}")
 				buf.N()
 			}
@@ -1120,7 +1131,7 @@ func (m *Method) delete(buf *file.Buffer, deleteOne bool) error {
 	m.ifErrNotNil(buf, true, "fmt.Errorf(\"Fetch affected rows: %w\", err)")
 	if deleteOne {
 		buf.L("if n == 0 {")
-		buf.L(`        return api.StatusErrorf(http.StatusNotFound, "%s not found")`, lex.Camel(m.entity))
+		buf.L(`        return mapErr(errTypeNotFound, err, %q)`, lex.Camel(m.entity))
 		buf.L("} else if n > 1 {")
 		buf.L("        return fmt.Errorf(\"Query deleted %%d %s rows instead of 1\", n)", lex.Camel(m.entity))
 		buf.L("}")
