@@ -1,17 +1,24 @@
 package cluster
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/lxc/incus/v6/shared/api"
 )
 
 func init() {
-	errMap[errTypeNotFound] = func(_ error, entity string) error {
+	mapErr = clusterMapErr
+}
+
+func clusterMapErr(err error, entity string) error {
+	if errors.Is(err, ErrNotFound) {
 		return api.StatusErrorf(http.StatusNotFound, "%s not found", entity)
 	}
 
-	errMap[errTypeConflict] = func(_ error, entity string) error {
-		return api.StatusErrorf(http.StatusConflict, "This entry already exists for %s", entity)
+	if errors.Is(err, ErrConflict) {
+		return api.StatusErrorf(http.StatusConflict, "This %q entry already exists", entity)
 	}
+
+	return err
 }

@@ -43,7 +43,11 @@ DELETE FROM instances_profiles WHERE instance_id = ?
 
 // GetProfileInstances returns all available Instances for the Profile.
 // generator: instance_profile GetMany
-func GetProfileInstances(ctx context.Context, tx *sql.Tx, profileID int) ([]Instance, error) {
+func GetProfileInstances(ctx context.Context, tx *sql.Tx, profileID int) (_ []Instance, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_profile")
+	}()
+
 	var err error
 
 	// Result slice.
@@ -131,7 +135,11 @@ func getInstanceProfilesRaw(ctx context.Context, tx *sql.Tx, sql string, args ..
 
 // GetInstanceProfiles returns all available Profiles for the Instance.
 // generator: instance_profile GetMany
-func GetInstanceProfiles(ctx context.Context, tx *sql.Tx, instanceID int) ([]Profile, error) {
+func GetInstanceProfiles(ctx context.Context, tx *sql.Tx, instanceID int) (_ []Profile, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_profile")
+	}()
+
 	var err error
 
 	// Result slice.
@@ -165,7 +173,11 @@ func GetInstanceProfiles(ctx context.Context, tx *sql.Tx, instanceID int) ([]Pro
 
 // CreateInstanceProfiles adds a new instance_profile to the database.
 // generator: instance_profile Create
-func CreateInstanceProfiles(ctx context.Context, tx *sql.Tx, objects []InstanceProfile) error {
+func CreateInstanceProfiles(ctx context.Context, tx *sql.Tx, objects []InstanceProfile) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_profile")
+	}()
+
 	for _, object := range objects {
 		args := make([]any, 3)
 
@@ -193,7 +205,11 @@ func CreateInstanceProfiles(ctx context.Context, tx *sql.Tx, objects []InstanceP
 
 // DeleteInstanceProfiles deletes the instance_profile matching the given key parameters.
 // generator: instance_profile DeleteMany
-func DeleteInstanceProfiles(ctx context.Context, tx *sql.Tx, instanceID int) error {
+func DeleteInstanceProfiles(ctx context.Context, tx *sql.Tx, instanceID int) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_profile")
+	}()
+
 	stmt, err := Stmt(tx, instanceProfileDeleteByInstanceID)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"instanceProfileDeleteByInstanceID\" prepared statement: %w", err)

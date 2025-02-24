@@ -78,7 +78,11 @@ func getDevicesRaw(ctx context.Context, tx *sql.Tx, sql string, parent string, a
 
 // GetDevices returns all available devices for the parent entity.
 // generator: device GetMany
-func GetDevices(ctx context.Context, tx *sql.Tx, parent string, filters ...DeviceFilter) (map[int][]Device, error) {
+func GetDevices(ctx context.Context, tx *sql.Tx, parent string, filters ...DeviceFilter) (_ map[int][]Device, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Device")
+	}()
+
 	var err error
 
 	// Result slice.
@@ -168,7 +172,11 @@ func GetDevices(ctx context.Context, tx *sql.Tx, parent string, filters ...Devic
 
 // CreateDevices adds a new device to the database.
 // generator: device Create
-func CreateDevices(ctx context.Context, tx *sql.Tx, parent string, objects map[string]Device) error {
+func CreateDevices(ctx context.Context, tx *sql.Tx, parent string, objects map[string]Device) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Device")
+	}()
+
 	deviceCreateLocal := strings.Replace(deviceCreate, "%s_id", fmt.Sprintf("%s_id", parent), -1)
 	fillParent := make([]any, strings.Count(deviceCreateLocal, "%s"))
 	for i := range fillParent {
@@ -207,7 +215,11 @@ func CreateDevices(ctx context.Context, tx *sql.Tx, parent string, objects map[s
 
 // UpdateDevices updates the device matching the given key parameters.
 // generator: device Update
-func UpdateDevices(ctx context.Context, tx *sql.Tx, parent string, referenceID int, devices map[string]Device) error {
+func UpdateDevices(ctx context.Context, tx *sql.Tx, parent string, referenceID int, devices map[string]Device) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Device")
+	}()
+
 	// Delete current entry.
 	err := DeleteDevices(ctx, tx, parent, referenceID)
 	if err != nil {
@@ -230,7 +242,11 @@ func UpdateDevices(ctx context.Context, tx *sql.Tx, parent string, referenceID i
 
 // DeleteDevices deletes the device matching the given key parameters.
 // generator: device DeleteMany
-func DeleteDevices(ctx context.Context, tx *sql.Tx, parent string, referenceID int) error {
+func DeleteDevices(ctx context.Context, tx *sql.Tx, parent string, referenceID int) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Device")
+	}()
+
 	deviceDeleteLocal := strings.Replace(deviceDelete, "%s_id", fmt.Sprintf("%s_id", parent), -1)
 	fillParent := make([]any, strings.Count(deviceDeleteLocal, "%s"))
 	for i := range fillParent {

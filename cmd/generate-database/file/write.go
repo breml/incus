@@ -19,28 +19,17 @@ package %s
 
 import (
 	"errors"
-	"fmt"
 )
 
-type errType int
-
-const (
-	errTypeNotFound errType = iota
-	errTypeConflict
+var (
+	ErrNotFound = errors.New("Not found")
+	ErrConflict = errors.New("Conflict")
 )
 
-var errMap = map[errType]func(err error, entity string) error {
-	errTypeNotFound: func(_ error, _ string) error { return errors.New("Not found") },
-	errTypeConflict: func(_ error, _ string) error { return errors.New("Conflict") },
-}
+var mapErr = defaultMapErr
 
-func mapErr(et errType, err error, entity string) error {
-	errFunc, ok := errMap[et]
-	if !ok {
-		return fmt.Errorf("err type %%d is not defined", et)
-	}
-
-	return errFunc(err, entity)
+func defaultMapErr(err error, entity string) error {
+	return err
 }
 `, codeGeneratedByLine, os.Getenv("GOPACKAGE"))
 

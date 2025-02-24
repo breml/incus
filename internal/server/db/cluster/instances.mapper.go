@@ -247,7 +247,11 @@ func getInstancesRaw(ctx context.Context, tx *sql.Tx, sql string, args ...any) (
 
 // GetInstances returns all available instances.
 // generator: instance GetMany
-func GetInstances(ctx context.Context, tx *sql.Tx, filters ...InstanceFilter) ([]Instance, error) {
+func GetInstances(ctx context.Context, tx *sql.Tx, filters ...InstanceFilter) (_ []Instance, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	var err error
 
 	// Result slice.
@@ -674,7 +678,11 @@ func GetInstances(ctx context.Context, tx *sql.Tx, filters ...InstanceFilter) ([
 
 // GetInstanceDevices returns all available Instance Devices
 // generator: instance GetMany
-func GetInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int, filters ...DeviceFilter) (map[string]Device, error) {
+func GetInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int, filters ...DeviceFilter) (_ map[string]Device, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	instanceDevices, err := GetDevices(ctx, tx, "instance", filters...)
 	if err != nil {
 		return nil, err
@@ -695,7 +703,11 @@ func GetInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int, filters
 
 // GetInstanceConfig returns all available Instance Config
 // generator: instance GetMany
-func GetInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int, filters ...ConfigFilter) (map[string]string, error) {
+func GetInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int, filters ...ConfigFilter) (_ map[string]string, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	instanceConfig, err := GetConfig(ctx, tx, "instance", filters...)
 	if err != nil {
 		return nil, err
@@ -711,7 +723,11 @@ func GetInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int, filters 
 
 // GetInstance returns the instance with the given key.
 // generator: instance GetOne
-func GetInstance(ctx context.Context, tx *sql.Tx, project string, name string) (*Instance, error) {
+func GetInstance(ctx context.Context, tx *sql.Tx, project string, name string) (_ *Instance, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	filter := InstanceFilter{}
 	filter.Project = &project
 	filter.Name = &name
@@ -723,7 +739,7 @@ func GetInstance(ctx context.Context, tx *sql.Tx, project string, name string) (
 
 	switch len(objects) {
 	case 0:
-		return nil, mapErr(errTypeNotFound, nil, "Instance")
+		return nil, ErrNotFound
 	case 1:
 		return &objects[0], nil
 	default:
@@ -733,7 +749,11 @@ func GetInstance(ctx context.Context, tx *sql.Tx, project string, name string) (
 
 // GetInstanceID return the ID of the instance with the given key.
 // generator: instance ID
-func GetInstanceID(ctx context.Context, tx *sql.Tx, project string, name string) (int64, error) {
+func GetInstanceID(ctx context.Context, tx *sql.Tx, project string, name string) (_ int64, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	stmt, err := Stmt(tx, instanceID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"instanceID\" prepared statement: %w", err)
@@ -743,7 +763,7 @@ func GetInstanceID(ctx context.Context, tx *sql.Tx, project string, name string)
 	var id int64
 	err = row.Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return -1, mapErr(errTypeNotFound, err, "Instance")
+		return -1, ErrNotFound
 	}
 
 	if err != nil {
@@ -755,7 +775,11 @@ func GetInstanceID(ctx context.Context, tx *sql.Tx, project string, name string)
 
 // InstanceExists checks if a instance with the given key exists.
 // generator: instance Exists
-func InstanceExists(ctx context.Context, tx *sql.Tx, project string, name string) (bool, error) {
+func InstanceExists(ctx context.Context, tx *sql.Tx, project string, name string) (_ bool, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	stmt, err := Stmt(tx, instanceID)
 	if err != nil {
 		return false, fmt.Errorf("Failed to get \"instanceID\" prepared statement: %w", err)
@@ -777,7 +801,11 @@ func InstanceExists(ctx context.Context, tx *sql.Tx, project string, name string
 
 // CreateInstance adds a new instance to the database.
 // generator: instance Create
-func CreateInstance(ctx context.Context, tx *sql.Tx, object Instance) (int64, error) {
+func CreateInstance(ctx context.Context, tx *sql.Tx, object Instance) (_ int64, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	// Check if a instance with the same key exists.
 	exists, err := InstanceExists(ctx, tx, object.Project, object.Name)
 	if err != nil {
@@ -785,7 +813,7 @@ func CreateInstance(ctx context.Context, tx *sql.Tx, object Instance) (int64, er
 	}
 
 	if exists {
-		return -1, mapErr(errTypeConflict, err, "instances")
+		return -1, ErrConflict
 	}
 
 	args := make([]any, 11)
@@ -825,7 +853,11 @@ func CreateInstance(ctx context.Context, tx *sql.Tx, object Instance) (int64, er
 
 // CreateInstanceDevices adds new instance Devices to the database.
 // generator: instance Create
-func CreateInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int64, devices map[string]Device) error {
+func CreateInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int64, devices map[string]Device) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	for key, device := range devices {
 		device.ReferenceID = int(instanceID)
 		devices[key] = device
@@ -841,7 +873,11 @@ func CreateInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int64, de
 
 // CreateInstanceConfig adds new instance Config to the database.
 // generator: instance Create
-func CreateInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int64, config map[string]string) error {
+func CreateInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int64, config map[string]string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	referenceID := int(instanceID)
 	for key, value := range config {
 		insert := Config{
@@ -862,7 +898,11 @@ func CreateInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int64, con
 
 // RenameInstance renames the instance matching the given key parameters.
 // generator: instance Rename
-func RenameInstance(ctx context.Context, tx *sql.Tx, project string, name string, to string) error {
+func RenameInstance(ctx context.Context, tx *sql.Tx, project string, name string, to string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	stmt, err := Stmt(tx, instanceRename)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"instanceRename\" prepared statement: %w", err)
@@ -887,7 +927,11 @@ func RenameInstance(ctx context.Context, tx *sql.Tx, project string, name string
 
 // DeleteInstance deletes the instance matching the given key parameters.
 // generator: instance DeleteOne-by-Project-and-Name
-func DeleteInstance(ctx context.Context, tx *sql.Tx, project string, name string) error {
+func DeleteInstance(ctx context.Context, tx *sql.Tx, project string, name string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	stmt, err := Stmt(tx, instanceDeleteByProjectAndName)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"instanceDeleteByProjectAndName\" prepared statement: %w", err)
@@ -904,7 +948,7 @@ func DeleteInstance(ctx context.Context, tx *sql.Tx, project string, name string
 	}
 
 	if n == 0 {
-		return mapErr(errTypeNotFound, err, "Instance")
+		return ErrNotFound
 	} else if n > 1 {
 		return fmt.Errorf("Query deleted %d Instance rows instead of 1", n)
 	}
@@ -914,7 +958,11 @@ func DeleteInstance(ctx context.Context, tx *sql.Tx, project string, name string
 
 // UpdateInstance updates the instance matching the given key parameters.
 // generator: instance Update
-func UpdateInstance(ctx context.Context, tx *sql.Tx, project string, name string, object Instance) error {
+func UpdateInstance(ctx context.Context, tx *sql.Tx, project string, name string, object Instance) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	id, err := GetInstanceID(ctx, tx, project, name)
 	if err != nil {
 		return err
@@ -944,7 +992,11 @@ func UpdateInstance(ctx context.Context, tx *sql.Tx, project string, name string
 
 // UpdateInstanceDevices updates the instance Device matching the given key parameters.
 // generator: instance Update
-func UpdateInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int64, devices map[string]Device) error {
+func UpdateInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int64, devices map[string]Device) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	err := UpdateDevices(ctx, tx, "instance", int(instanceID), devices)
 	if err != nil {
 		return fmt.Errorf("Replace Device for Instance failed: %w", err)
@@ -955,7 +1007,11 @@ func UpdateInstanceDevices(ctx context.Context, tx *sql.Tx, instanceID int64, de
 
 // UpdateInstanceConfig updates the instance Config matching the given key parameters.
 // generator: instance Update
-func UpdateInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int64, config map[string]string) error {
+func UpdateInstanceConfig(ctx context.Context, tx *sql.Tx, instanceID int64, config map[string]string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance")
+	}()
+
 	err := UpdateConfig(ctx, tx, "instance", int(instanceID), config)
 	if err != nil {
 		return fmt.Errorf("Replace Config for Instance failed: %w", err)

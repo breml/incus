@@ -125,7 +125,11 @@ func getInstanceSnapshotsRaw(ctx context.Context, tx *sql.Tx, sql string, args .
 
 // GetInstanceSnapshots returns all available instance_snapshots.
 // generator: instance_snapshot GetMany
-func GetInstanceSnapshots(ctx context.Context, tx *sql.Tx, filters ...InstanceSnapshotFilter) ([]InstanceSnapshot, error) {
+func GetInstanceSnapshots(ctx context.Context, tx *sql.Tx, filters ...InstanceSnapshotFilter) (_ []InstanceSnapshot, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	var err error
 
 	// Result slice.
@@ -240,7 +244,11 @@ func GetInstanceSnapshots(ctx context.Context, tx *sql.Tx, filters ...InstanceSn
 
 // GetInstanceSnapshotDevices returns all available InstanceSnapshot Devices
 // generator: instance_snapshot GetMany
-func GetInstanceSnapshotDevices(ctx context.Context, tx *sql.Tx, instanceSnapshotID int, filters ...DeviceFilter) (map[string]Device, error) {
+func GetInstanceSnapshotDevices(ctx context.Context, tx *sql.Tx, instanceSnapshotID int, filters ...DeviceFilter) (_ map[string]Device, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	instanceSnapshotDevices, err := GetDevices(ctx, tx, "instance_snapshot", filters...)
 	if err != nil {
 		return nil, err
@@ -261,7 +269,11 @@ func GetInstanceSnapshotDevices(ctx context.Context, tx *sql.Tx, instanceSnapsho
 
 // GetInstanceSnapshotConfig returns all available InstanceSnapshot Config
 // generator: instance_snapshot GetMany
-func GetInstanceSnapshotConfig(ctx context.Context, tx *sql.Tx, instanceSnapshotID int, filters ...ConfigFilter) (map[string]string, error) {
+func GetInstanceSnapshotConfig(ctx context.Context, tx *sql.Tx, instanceSnapshotID int, filters ...ConfigFilter) (_ map[string]string, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	instanceSnapshotConfig, err := GetConfig(ctx, tx, "instance_snapshot", filters...)
 	if err != nil {
 		return nil, err
@@ -277,7 +289,11 @@ func GetInstanceSnapshotConfig(ctx context.Context, tx *sql.Tx, instanceSnapshot
 
 // GetInstanceSnapshot returns the instance_snapshot with the given key.
 // generator: instance_snapshot GetOne
-func GetInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instance string, name string) (*InstanceSnapshot, error) {
+func GetInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instance string, name string) (_ *InstanceSnapshot, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	filter := InstanceSnapshotFilter{}
 	filter.Project = &project
 	filter.Instance = &instance
@@ -290,7 +306,7 @@ func GetInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instan
 
 	switch len(objects) {
 	case 0:
-		return nil, mapErr(errTypeNotFound, nil, "InstanceSnapshot")
+		return nil, ErrNotFound
 	case 1:
 		return &objects[0], nil
 	default:
@@ -300,7 +316,11 @@ func GetInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instan
 
 // GetInstanceSnapshotID return the ID of the instance_snapshot with the given key.
 // generator: instance_snapshot ID
-func GetInstanceSnapshotID(ctx context.Context, tx *sql.Tx, project string, instance string, name string) (int64, error) {
+func GetInstanceSnapshotID(ctx context.Context, tx *sql.Tx, project string, instance string, name string) (_ int64, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	stmt, err := Stmt(tx, instanceSnapshotID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"instanceSnapshotID\" prepared statement: %w", err)
@@ -310,7 +330,7 @@ func GetInstanceSnapshotID(ctx context.Context, tx *sql.Tx, project string, inst
 	var id int64
 	err = row.Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return -1, mapErr(errTypeNotFound, err, "InstanceSnapshot")
+		return -1, ErrNotFound
 	}
 
 	if err != nil {
@@ -322,7 +342,11 @@ func GetInstanceSnapshotID(ctx context.Context, tx *sql.Tx, project string, inst
 
 // InstanceSnapshotExists checks if a instance_snapshot with the given key exists.
 // generator: instance_snapshot Exists
-func InstanceSnapshotExists(ctx context.Context, tx *sql.Tx, project string, instance string, name string) (bool, error) {
+func InstanceSnapshotExists(ctx context.Context, tx *sql.Tx, project string, instance string, name string) (_ bool, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	stmt, err := Stmt(tx, instanceSnapshotID)
 	if err != nil {
 		return false, fmt.Errorf("Failed to get \"instanceSnapshotID\" prepared statement: %w", err)
@@ -344,7 +368,11 @@ func InstanceSnapshotExists(ctx context.Context, tx *sql.Tx, project string, ins
 
 // CreateInstanceSnapshot adds a new instance_snapshot to the database.
 // generator: instance_snapshot Create
-func CreateInstanceSnapshot(ctx context.Context, tx *sql.Tx, object InstanceSnapshot) (int64, error) {
+func CreateInstanceSnapshot(ctx context.Context, tx *sql.Tx, object InstanceSnapshot) (_ int64, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	// Check if a instance_snapshot with the same key exists.
 	exists, err := InstanceSnapshotExists(ctx, tx, object.Project, object.Instance, object.Name)
 	if err != nil {
@@ -352,7 +380,7 @@ func CreateInstanceSnapshot(ctx context.Context, tx *sql.Tx, object InstanceSnap
 	}
 
 	if exists {
-		return -1, mapErr(errTypeConflict, err, "instances_snapshots")
+		return -1, ErrConflict
 	}
 
 	args := make([]any, 7)
@@ -388,7 +416,11 @@ func CreateInstanceSnapshot(ctx context.Context, tx *sql.Tx, object InstanceSnap
 
 // CreateInstanceSnapshotDevices adds new instance_snapshot Devices to the database.
 // generator: instance_snapshot Create
-func CreateInstanceSnapshotDevices(ctx context.Context, tx *sql.Tx, instanceSnapshotID int64, devices map[string]Device) error {
+func CreateInstanceSnapshotDevices(ctx context.Context, tx *sql.Tx, instanceSnapshotID int64, devices map[string]Device) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	for key, device := range devices {
 		device.ReferenceID = int(instanceSnapshotID)
 		devices[key] = device
@@ -404,7 +436,11 @@ func CreateInstanceSnapshotDevices(ctx context.Context, tx *sql.Tx, instanceSnap
 
 // CreateInstanceSnapshotConfig adds new instance_snapshot Config to the database.
 // generator: instance_snapshot Create
-func CreateInstanceSnapshotConfig(ctx context.Context, tx *sql.Tx, instanceSnapshotID int64, config map[string]string) error {
+func CreateInstanceSnapshotConfig(ctx context.Context, tx *sql.Tx, instanceSnapshotID int64, config map[string]string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	referenceID := int(instanceSnapshotID)
 	for key, value := range config {
 		insert := Config{
@@ -425,7 +461,11 @@ func CreateInstanceSnapshotConfig(ctx context.Context, tx *sql.Tx, instanceSnaps
 
 // RenameInstanceSnapshot renames the instance_snapshot matching the given key parameters.
 // generator: instance_snapshot Rename
-func RenameInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instance string, name string, to string) error {
+func RenameInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instance string, name string, to string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	stmt, err := Stmt(tx, instanceSnapshotRename)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"instanceSnapshotRename\" prepared statement: %w", err)
@@ -450,7 +490,11 @@ func RenameInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, ins
 
 // DeleteInstanceSnapshot deletes the instance_snapshot matching the given key parameters.
 // generator: instance_snapshot DeleteOne-by-Project-and-Instance-and-Name
-func DeleteInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instance string, name string) error {
+func DeleteInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, instance string, name string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Instance_snapshot")
+	}()
+
 	stmt, err := Stmt(tx, instanceSnapshotDeleteByProjectAndInstanceAndName)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"instanceSnapshotDeleteByProjectAndInstanceAndName\" prepared statement: %w", err)
@@ -467,7 +511,7 @@ func DeleteInstanceSnapshot(ctx context.Context, tx *sql.Tx, project string, ins
 	}
 
 	if n == 0 {
-		return mapErr(errTypeNotFound, err, "InstanceSnapshot")
+		return ErrNotFound
 	} else if n > 1 {
 		return fmt.Errorf("Query deleted %d InstanceSnapshot rows instead of 1", n)
 	}

@@ -99,7 +99,11 @@ func getNodeClusterGroupsRaw(ctx context.Context, tx *sql.Tx, sql string, args .
 
 // GetNodeClusterGroups returns all available node_cluster_groups.
 // generator: node_cluster_group GetMany
-func GetNodeClusterGroups(ctx context.Context, tx *sql.Tx, filters ...NodeClusterGroupFilter) ([]NodeClusterGroup, error) {
+func GetNodeClusterGroups(ctx context.Context, tx *sql.Tx, filters ...NodeClusterGroupFilter) (_ []NodeClusterGroup, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Node_cluster_group")
+	}()
+
 	var err error
 
 	// Result slice.
@@ -166,7 +170,11 @@ func GetNodeClusterGroups(ctx context.Context, tx *sql.Tx, filters ...NodeCluste
 
 // CreateNodeClusterGroup adds a new node_cluster_group to the database.
 // generator: node_cluster_group Create
-func CreateNodeClusterGroup(ctx context.Context, tx *sql.Tx, object NodeClusterGroup) (int64, error) {
+func CreateNodeClusterGroup(ctx context.Context, tx *sql.Tx, object NodeClusterGroup) (_ int64, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Node_cluster_group")
+	}()
+
 	// Check if a node_cluster_group with the same key exists.
 	exists, err := NodeClusterGroupExists(ctx, tx, object.GroupID)
 	if err != nil {
@@ -174,7 +182,7 @@ func CreateNodeClusterGroup(ctx context.Context, tx *sql.Tx, object NodeClusterG
 	}
 
 	if exists {
-		return -1, mapErr(errTypeConflict, err, "nodes_clusters_groups")
+		return -1, ErrConflict
 	}
 
 	args := make([]any, 2)
@@ -205,7 +213,11 @@ func CreateNodeClusterGroup(ctx context.Context, tx *sql.Tx, object NodeClusterG
 
 // NodeClusterGroupExists checks if a node_cluster_group with the given key exists.
 // generator: node_cluster_group Exists
-func NodeClusterGroupExists(ctx context.Context, tx *sql.Tx, groupID int) (bool, error) {
+func NodeClusterGroupExists(ctx context.Context, tx *sql.Tx, groupID int) (_ bool, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Node_cluster_group")
+	}()
+
 	stmt, err := Stmt(tx, nodeClusterGroupID)
 	if err != nil {
 		return false, fmt.Errorf("Failed to get \"nodeClusterGroupID\" prepared statement: %w", err)
@@ -227,7 +239,11 @@ func NodeClusterGroupExists(ctx context.Context, tx *sql.Tx, groupID int) (bool,
 
 // GetNodeClusterGroupID return the ID of the node_cluster_group with the given key.
 // generator: node_cluster_group ID
-func GetNodeClusterGroupID(ctx context.Context, tx *sql.Tx, groupID int) (int64, error) {
+func GetNodeClusterGroupID(ctx context.Context, tx *sql.Tx, groupID int) (_ int64, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Node_cluster_group")
+	}()
+
 	stmt, err := Stmt(tx, nodeClusterGroupID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"nodeClusterGroupID\" prepared statement: %w", err)
@@ -237,7 +253,7 @@ func GetNodeClusterGroupID(ctx context.Context, tx *sql.Tx, groupID int) (int64,
 	var id int64
 	err = row.Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return -1, mapErr(errTypeNotFound, err, "NodeClusterGroup")
+		return -1, ErrNotFound
 	}
 
 	if err != nil {
@@ -249,7 +265,11 @@ func GetNodeClusterGroupID(ctx context.Context, tx *sql.Tx, groupID int) (int64,
 
 // DeleteNodeClusterGroup deletes the node_cluster_group matching the given key parameters.
 // generator: node_cluster_group DeleteOne-by-GroupID
-func DeleteNodeClusterGroup(ctx context.Context, tx *sql.Tx, groupID int) error {
+func DeleteNodeClusterGroup(ctx context.Context, tx *sql.Tx, groupID int) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Node_cluster_group")
+	}()
+
 	stmt, err := Stmt(tx, nodeClusterGroupDeleteByGroupID)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"nodeClusterGroupDeleteByGroupID\" prepared statement: %w", err)
@@ -266,7 +286,7 @@ func DeleteNodeClusterGroup(ctx context.Context, tx *sql.Tx, groupID int) error 
 	}
 
 	if n == 0 {
-		return mapErr(errTypeNotFound, err, "NodeClusterGroup")
+		return ErrNotFound
 	} else if n > 1 {
 		return fmt.Errorf("Query deleted %d NodeClusterGroup rows instead of 1", n)
 	}

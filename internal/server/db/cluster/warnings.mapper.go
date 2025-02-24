@@ -145,7 +145,11 @@ func getWarningsRaw(ctx context.Context, tx *sql.Tx, sql string, args ...any) ([
 
 // GetWarnings returns all available warnings.
 // generator: warning GetMany
-func GetWarnings(ctx context.Context, tx *sql.Tx, filters ...WarningFilter) ([]Warning, error) {
+func GetWarnings(ctx context.Context, tx *sql.Tx, filters ...WarningFilter) (_ []Warning, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Warning")
+	}()
+
 	var err error
 
 	// Result slice.
@@ -332,7 +336,11 @@ func GetWarnings(ctx context.Context, tx *sql.Tx, filters ...WarningFilter) ([]W
 
 // GetWarning returns the warning with the given key.
 // generator: warning GetOne-by-UUID
-func GetWarning(ctx context.Context, tx *sql.Tx, uuid string) (*Warning, error) {
+func GetWarning(ctx context.Context, tx *sql.Tx, uuid string) (_ *Warning, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Warning")
+	}()
+
 	filter := WarningFilter{}
 	filter.UUID = &uuid
 
@@ -343,7 +351,7 @@ func GetWarning(ctx context.Context, tx *sql.Tx, uuid string) (*Warning, error) 
 
 	switch len(objects) {
 	case 0:
-		return nil, mapErr(errTypeNotFound, nil, "Warning")
+		return nil, ErrNotFound
 	case 1:
 		return &objects[0], nil
 	default:
@@ -353,7 +361,11 @@ func GetWarning(ctx context.Context, tx *sql.Tx, uuid string) (*Warning, error) 
 
 // DeleteWarning deletes the warning matching the given key parameters.
 // generator: warning DeleteOne-by-UUID
-func DeleteWarning(ctx context.Context, tx *sql.Tx, uuid string) error {
+func DeleteWarning(ctx context.Context, tx *sql.Tx, uuid string) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Warning")
+	}()
+
 	stmt, err := Stmt(tx, warningDeleteByUUID)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"warningDeleteByUUID\" prepared statement: %w", err)
@@ -370,7 +382,7 @@ func DeleteWarning(ctx context.Context, tx *sql.Tx, uuid string) error {
 	}
 
 	if n == 0 {
-		return mapErr(errTypeNotFound, err, "Warning")
+		return ErrNotFound
 	} else if n > 1 {
 		return fmt.Errorf("Query deleted %d Warning rows instead of 1", n)
 	}
@@ -380,7 +392,11 @@ func DeleteWarning(ctx context.Context, tx *sql.Tx, uuid string) error {
 
 // DeleteWarnings deletes the warning matching the given key parameters.
 // generator: warning DeleteMany-by-EntityTypeCode-and-EntityID
-func DeleteWarnings(ctx context.Context, tx *sql.Tx, entityTypeCode int, entityID int) error {
+func DeleteWarnings(ctx context.Context, tx *sql.Tx, entityTypeCode int, entityID int) (_err error) {
+	defer func() {
+		_err = mapErr(_err, "Warning")
+	}()
+
 	stmt, err := Stmt(tx, warningDeleteByEntityTypeCodeAndEntityID)
 	if err != nil {
 		return fmt.Errorf("Failed to get \"warningDeleteByEntityTypeCodeAndEntityID\" prepared statement: %w", err)
@@ -401,7 +417,11 @@ func DeleteWarnings(ctx context.Context, tx *sql.Tx, entityTypeCode int, entityI
 
 // GetWarningID return the ID of the warning with the given key.
 // generator: warning ID
-func GetWarningID(ctx context.Context, tx *sql.Tx, uuid string) (int64, error) {
+func GetWarningID(ctx context.Context, tx *sql.Tx, uuid string) (_ int64, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Warning")
+	}()
+
 	stmt, err := Stmt(tx, warningID)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to get \"warningID\" prepared statement: %w", err)
@@ -411,7 +431,7 @@ func GetWarningID(ctx context.Context, tx *sql.Tx, uuid string) (int64, error) {
 	var id int64
 	err = row.Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return -1, mapErr(errTypeNotFound, err, "Warning")
+		return -1, ErrNotFound
 	}
 
 	if err != nil {
@@ -423,7 +443,11 @@ func GetWarningID(ctx context.Context, tx *sql.Tx, uuid string) (int64, error) {
 
 // WarningExists checks if a warning with the given key exists.
 // generator: warning Exists
-func WarningExists(ctx context.Context, tx *sql.Tx, uuid string) (bool, error) {
+func WarningExists(ctx context.Context, tx *sql.Tx, uuid string) (_ bool, _err error) {
+	defer func() {
+		_err = mapErr(_err, "Warning")
+	}()
+
 	stmt, err := Stmt(tx, warningID)
 	if err != nil {
 		return false, fmt.Errorf("Failed to get \"warningID\" prepared statement: %w", err)
