@@ -259,7 +259,7 @@ type StoragePoolNode struct {
 
 // CreatePendingStoragePool creates a new pending storage pool on the node with
 // the given name.
-func (c *ClusterTx) CreatePendingStoragePool(ctx context.Context, node string, name string, driver string, conf map[string]string) error {
+func (c *ClusterTx) CreatePendingStoragePool(ctx context.Context, node string, name string, driver string, description string, conf map[string]string) error {
 	// First check if a storage pool with the given name exists, and, if
 	// so, that it has a matching driver and it's in the pending state.
 	pool := struct {
@@ -289,7 +289,7 @@ func (c *ClusterTx) CreatePendingStoragePool(ctx context.Context, node string, n
 		// No existing pool with the given name was found, let's create
 		// one.
 		columns := []string{"name", "driver", "description"}
-		values := []any{name, driver, ""}
+		values := []any{name, driver, description}
 		poolID, err = query.UpsertObject(c.tx, "storage_pools", columns, values)
 		if err != nil {
 			return err
