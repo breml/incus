@@ -394,7 +394,7 @@ func storagePoolsPost(d *Daemon, r *http.Request) response.Response {
 				exists = true
 			}
 
-			return tx.CreatePendingStoragePool(ctx, targetNode, req.Name, req.Driver, req.Config)
+			return tx.CreatePendingStoragePool(ctx, targetNode, req.Name, req.Driver, req.Description, req.Config)
 		})
 		if err != nil {
 			if errors.Is(err, db.ErrAlreadyDefined) {
