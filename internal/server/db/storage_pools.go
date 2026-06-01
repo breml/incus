@@ -884,6 +884,7 @@ func (c *ClusterTx) RemoveStoragePool(ctx context.Context, poolName string) (*ap
 // NodeSpecificStorageConfig lists all storage pool config keys which are node-specific.
 func NodeSpecificStorageConfig(driverName string) []string {
 	configKeys := []string{
+		"size",
 		"source",
 		"source.wipe",
 		"volatile.initial_source",
